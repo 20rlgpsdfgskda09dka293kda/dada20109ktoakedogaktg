@@ -520,6 +520,23 @@ html, body{
   transition: top .09s linear;
 }
 
+/* Vanity-style page marker: a bright tick that shows where you are, plus
+   faded chevrons above/below when there is more content that way. */
+#posMarker{
+  position: absolute;
+  left: calc(var(--u) * .14);
+  width: calc(var(--u) * .20);
+  height: calc(var(--u) * .55);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 calc(var(--u) * .45) rgba(255,255,255,.9);
+  opacity: 0;
+  transition: top .09s linear, opacity .12s ease;
+  pointer-events: none;
+  z-index: 3;
+}
+#posMarker.on{ opacity: 1; }
+
 /* ================================================================= footer */
 #footer{
   height: calc(var(--u) * 1.78);
@@ -731,6 +748,138 @@ html, body{
   margin-left: auto;
 }
 
+/* ============================================================== modals ==== */
+.overlay{
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(calc(var(--u) * .30));
+  -webkit-backdrop-filter: blur(calc(var(--u) * .30));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+  z-index: 60;
+}
+.overlay.on{ opacity: 1; pointer-events: auto; }
+
+.overlay .box{
+  width: calc(var(--u) * 24);
+  max-width: 86vw;
+  padding: calc(var(--u) * .80);
+  background: var(--panel-solid);
+  border: 1px solid var(--hair);
+  border-radius: calc(var(--u) * .30);
+  box-shadow: 0 calc(var(--u) * .9) calc(var(--u) * 2.4) rgba(0,0,0,.85);
+  transform: translateY(calc(var(--u) * .25));
+  transition: transform .14s cubic-bezier(.2,.8,.2,1);
+  position: relative;
+  overflow: hidden;
+}
+.overlay.on .box{ transform: translateY(0); }
+.overlay .box::after{
+  content: "";
+  position: absolute;
+  left: calc(var(--u) * .24); right: calc(var(--u) * .24); bottom: 0;
+  height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(var(--accent-rgb), .9) 35%,
+    rgba(var(--accent-hi-rgb), .95) 65%,
+    transparent);
+}
+
+.bx-head{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * .5);
+  margin-bottom: calc(var(--u) * .50);
+}
+.bx-head span:first-child{
+  font-size: calc(var(--u) * .720);
+  font-weight: 700;
+  letter-spacing: -.012em;
+  color: #fff;
+}
+#mdCount{
+  font-size: calc(var(--u) * .555);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+
+#mdInput{
+  width: 100%;
+  height: calc(var(--u) * 2.10);
+  padding: 0 calc(var(--u) * .55);
+  background: rgba(0, 0, 0, .55);
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: calc(var(--u) * .18);
+  color: #fff;
+  font-family: inherit;
+  font-size: calc(var(--u) * .700);
+  font-weight: 500;
+  letter-spacing: -.005em;
+  outline: none;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+#mdInput:focus{
+  border-color: rgba(var(--accent-hi-rgb), .75);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .18);
+}
+#mdInput::placeholder{ color: var(--faint); }
+
+.bx-hint{
+  display: flex;
+  justify-content: space-between;
+  gap: calc(var(--u) * .5);
+  margin-top: calc(var(--u) * .50);
+  font-size: calc(var(--u) * .520);
+  font-weight: 600;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.bc-target{
+  font-size: calc(var(--u) * .620);
+  font-weight: 600;
+  color: var(--dim);
+  margin-bottom: calc(var(--u) * .30);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bc-key{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--u) * 3.40);
+  border-radius: calc(var(--u) * .22);
+  background: rgba(0, 0, 0, .5);
+  border: 1px dashed rgba(var(--accent-hi-rgb), .45);
+  font-size: calc(var(--u) * .880);
+  font-weight: 700;
+  letter-spacing: .10em;
+  color: var(--accent-hi);
+  text-transform: uppercase;
+  animation: pulseKey 1.4s ease-in-out infinite;
+}
+@keyframes pulseKey{
+  0%, 100%{ border-color: rgba(var(--accent-hi-rgb), .30); }
+  50%     { border-color: rgba(var(--accent-hi-rgb), .85); }
+}
+.bc-key.got{
+  animation: none;
+  color: #fff;
+  border-style: solid;
+  border-color: rgba(var(--accent-hi-rgb), .9);
+  background: rgba(var(--accent-rgb), .18);
+}
+
 /* ========================================================== notifications */
 #toasts{
   position: fixed;
@@ -810,6 +959,7 @@ html, body{
       <div id="selglow" class="hidden"></div>
       <div id="rows"></div>
       <div id="scroll"><div class="thumb"></div></div>
+      <div id="posMarker"></div>
     </div>
   </div>
 
@@ -845,6 +995,39 @@ html, body{
 
 <div id="toasts"></div>
 
+<!-- ====================================================== text input modal --
+     Replaces the old vertex.Draw prompt, which no longer renders because NUI
+     owns the screen. Used by textboxes (banner URL, spawn by name, ...).
+-->
+<div id="modal" class="overlay">
+  <div class="box">
+    <div class="bx-head">
+      <span id="mdTitle">Input</span>
+      <span id="mdCount">0/48</span>
+    </div>
+    <input id="mdInput" type="text" spellcheck="false" autocomplete="off" />
+    <div class="bx-hint">
+      <span>ENTER to confirm</span>
+      <span>ESC to cancel</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================== key bind capture --
+     Replaces the old draw-based "PRESS A KEY NOW" card.
+-->
+<div id="bindcap" class="overlay">
+  <div class="box">
+    <div class="bx-head"><span>Press a key</span></div>
+    <div id="bcTarget" class="bc-target">feature</div>
+    <div id="bcKey" class="bc-key">waiting...</div>
+    <div class="bx-hint">
+      <span>BACKSPACE to remove</span>
+      <span>ESC to cancel</span>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   "use strict";
@@ -860,11 +1043,24 @@ html, body{
   var cNow     = document.getElementById("cNow");
   var cAll     = document.getElementById("cAll");
   var scrollEl = document.getElementById("scroll");
+  var posMarker = document.getElementById("posMarker");
   var thumbEl  = scrollEl.firstElementChild;
   var toastsEl = document.getElementById("toasts");
   var listEl   = document.getElementById("list");
   var bannerEl = document.getElementById("banner");
   var bannerState = { img: null };
+
+  var modalEl  = document.getElementById("modal");
+  var mdTitle  = document.getElementById("mdTitle");
+  var mdInput  = document.getElementById("mdInput");
+  var mdCount  = document.getElementById("mdCount");
+  var mdMax    = 48;
+  var mdActive = false;
+
+  var bindEl   = document.getElementById("bindcap");
+  var bcTarget = document.getElementById("bcTarget");
+  var bcKey    = document.getElementById("bcKey");
+  var bindActive = false;
 
   var pickerEl = document.getElementById("picker");
   var pkTitle  = document.getElementById("pkTitle");
@@ -995,6 +1191,108 @@ html, body{
     }
     return text.slice(0, Math.max(4, text.length - 1)) + "\u2026";
   }
+
+  /* ------------------------------------------------------------ text modal */
+  function openModal(d) {
+    mdActive = true;
+    mdMax = Math.max(1, Number(d.maxLen) || 128);
+    mdTitle.textContent = String(d.title || "Input");
+
+    mdInput.value = String(d.value != null ? d.value : "");
+    mdInput.placeholder = d.placeholder ? String(d.placeholder) : "";
+    mdInput.maxLength = mdMax;
+    mdInput.dataset.pattern = d.pattern ? String(d.pattern) : "";
+
+    modalEl.classList.add("on");
+    updateModalCount();
+
+    requestAnimationFrame(function () {
+      mdInput.focus();
+      var len = mdInput.value.length;
+      try { mdInput.setSelectionRange(len, len); } catch (e) {}
+    });
+  }
+
+  function updateModalCount() {
+    mdCount.textContent = mdInput.value.length + "/" + mdMax;
+  }
+
+  function closeModal(commit) {
+    if (!mdActive) return;
+    mdActive = false;
+    modalEl.classList.remove("on");
+    send("pm:modal", { commit: commit === true, value: mdInput.value });
+  }
+
+  mdInput.addEventListener("input", function () {
+    var pat = mdInput.dataset.pattern;
+    if (pat) {
+      try {
+        var re = new RegExp("^" + pat + "$");
+        if (mdInput.value !== "" && !re.test(mdInput.value.slice(-1))) {
+          mdInput.value = mdInput.value.slice(0, -1);
+        }
+      } catch (e) {}
+    }
+    updateModalCount();
+  });
+
+  mdInput.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); closeModal(true); }
+    else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); closeModal(false); }
+    else { ev.stopPropagation(); }
+  });
+
+  /* --------------------------------------------------------- bind capture */
+  function openBindCapture(d) {
+    bindActive = true;
+    bcTarget.textContent = String(d.target || "feature");
+    bcKey.textContent = "waiting...";
+    bcKey.classList.remove("got");
+    bindEl.classList.add("on");
+  }
+
+  function bindKeyName(ev) {
+    var k = ev.key;
+    var map = {
+      " ": "SPACE", Escape: "ESC", Backspace: "BACKSPACE", Enter: "ENTER",
+      Tab: "TAB", ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT",
+      ArrowRight: "RIGHT", Shift: "SHIFT", Control: "CTRL", Alt: "ALT",
+      CapsLock: "CAPS", Delete: "DELETE", Insert: "INSERT", Home: "HOME",
+      End: "END", PageUp: "PAGE UP", PageDown: "PAGE DOWN"
+    };
+    if (map[k]) return map[k];
+    if (k && k.length === 1) return k.toUpperCase();
+    return String(k || "").toUpperCase();
+  }
+
+  function closeBindCapture() {
+    if (!bindActive) return;
+    bindActive = false;
+    bindEl.classList.remove("on");
+  }
+
+  window.addEventListener("keydown", function (ev) {
+    if (!bindActive) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    if (ev.key === "Escape") {
+      send("pm:bindCapture", { cancel: true });
+      closeBindCapture();
+      return;
+    }
+    if (ev.key === "Backspace") {
+      bcKey.textContent = "UNBOUND";
+      bcKey.classList.add("got");
+      send("pm:bindCapture", { clear: true });
+      return;
+    }
+    var name = bindKeyName(ev);
+    bcKey.textContent = name;
+    bcKey.classList.add("got");
+    send("pm:bindCapture", { key: ev.key, name: name, code: ev.keyCode || 0 });
+  }, true);
 
   function hsvToRgb(h, s, v) {
     var i = Math.floor(h * 6);
@@ -1424,8 +1722,19 @@ html, body{
       scrollEl.style.height = rowsH.toFixed(1) + "px";
       thumbEl.style.height = thumbH.toFixed(1) + "px";
       thumbEl.style.top = ((first / maxFirst) * maxTop).toFixed(1) + "px";
+
+      /* Page marker (Vanity style): sits at the exact scroll position so you
+         can tell at a glance whether there is content above or below. */
+      if (posMarker) {
+        var markerH = ROW_H * 0.30;
+        var travel = Math.max(0, rowsH - markerH);
+        var frac = maxFirst > 0 ? (first / maxFirst) : 0;
+        posMarker.style.top = ((rowsEl.offsetTop || 0) + frac * travel).toFixed(1) + "px";
+        posMarker.classList.add("on");
+      }
     } else {
       scrollEl.classList.remove("on");
+      if (posMarker) posMarker.classList.remove("on");
     }
 
     /* description */
@@ -1493,6 +1802,12 @@ html, body{
       apply(body && body.model ? body.model : body);
     } else if (action === "notify") {
       notify(body);
+    } else if (action === "modal") {
+      if (body && body.open === false) closeModal(false);
+      else openModal(body || {});
+    } else if (action === "bindCapture") {
+      if (body && body.open === false) closeBindCapture();
+      else openBindCapture(body || {});
     } else if (action === "picker") {
       if (body && body.open === false) closePicker();
       else openPicker(body || {});
