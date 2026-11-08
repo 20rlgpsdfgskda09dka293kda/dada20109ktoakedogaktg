@@ -85,6 +85,28 @@ html, body{
   background:
     radial-gradient(130% 170% at 100% 0%, rgba(var(--accent-rgb), .17) 0%, transparent 62%),
     linear-gradient(180deg, #1d1d21 0%, #101013 58%, #0b0b0d 100%);
+  background-size: cover, cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+/* custom banner image sits under the built-in texture layers */
+#banner.has-img{
+  background-image: var(--banner-img), none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+/* keeps the wordmark readable over any photo the user drops in */
+#banner.has-img::before{
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg,
+    rgba(0,0,0,.92) 0%,
+    rgba(0,0,0,.72) 42%,
+    rgba(0,0,0,.34) 100%);
+  pointer-events: none;
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 #banner::before{
   content: "";
@@ -247,14 +269,15 @@ html, body{
 /* =================================================================== list */
 #list{
   position: relative;
-  padding: calc(var(--u) * .24) calc(var(--u) * .16);
+  /* room on the left for the scroll rail so it never sits under the rows */
+  padding: calc(var(--u) * .24) calc(var(--u) * .14) calc(var(--u) * .24) calc(var(--u) * .46);
 }
 
 #selglow{
   position: absolute;
-  left: calc(var(--u) * .16);
+  left: calc(var(--u) * .28);
   top: calc(var(--u) * .24);
-  width: calc(100% - calc(var(--u) * .32));
+  width: calc(100% - calc(var(--u) * .42));
   height: var(--row-h);
   border-radius: calc(var(--u) * .26);
   background: linear-gradient(90deg,
@@ -310,24 +333,33 @@ html, body{
   gap: calc(var(--u) * .34);
 }
 
-/* divider rows */
+/* divider rows - centred label with a rail either side, balanced */
 .row.divi{
   justify-content: center;
-  gap: calc(var(--u) * .40);
-  padding: 0 calc(var(--u) * .80);
+  align-items: center;
+  gap: calc(var(--u) * .42);
+  padding: 0 calc(var(--u) * .72);
 }
 .row.divi .label{
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   font-size: calc(var(--u) * .585);
   font-weight: 600;
   letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--faint);
+  white-space: nowrap;
 }
 .row.divi .bar{
   flex: 1 1 0;
+  min-width: calc(var(--u) * 1.2);
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent);
+}
+.row.divi .bar:first-child{
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.16));
+}
+.row.divi .bar:last-child{
+  background: linear-gradient(90deg, rgba(255,255,255,.16), transparent);
 }
 .row.divi .right{ display: none; }
 
@@ -466,15 +498,17 @@ html, body{
   transform: rotate(-45deg) translateX(calc(var(--u) * .05));
 }
 
-/* scrollbar */
+/* scrollbar - a visible progress rail pinned inside the left edge of the list */
 #scroll{
   position: absolute;
-  left: calc(var(--u) * -.62);
-  width: calc(var(--u) * .26);
+  left: calc(var(--u) * .14);
+  width: calc(var(--u) * .20);
   border-radius: 999px;
-  background: rgba(0, 0, 0, .55);
+  background: rgba(255, 255, 255, .07);
   opacity: 0;
   transition: opacity .15s ease;
+  z-index: 2;
+  pointer-events: none;
 }
 #scroll.on{ opacity: 1; }
 #scroll .thumb{
@@ -482,8 +516,8 @@ html, body{
   left: 0; right: 0;
   border-radius: 999px;
   background: linear-gradient(180deg, var(--accent-hi), var(--accent));
-  box-shadow: 0 0 calc(var(--u) * .3) rgba(var(--accent-rgb), .5);
-  transition: top .1s ease;
+  box-shadow: 0 0 calc(var(--u) * .32) rgba(var(--accent-rgb), .75);
+  transition: top .09s linear;
 }
 
 /* ================================================================= footer */
@@ -829,6 +863,8 @@ html, body{
   var thumbEl  = scrollEl.firstElementChild;
   var toastsEl = document.getElementById("toasts");
   var listEl   = document.getElementById("list");
+  var bannerEl = document.getElementById("banner");
+  var bannerState = { img: null };
 
   var pickerEl = document.getElementById("picker");
   var pkTitle  = document.getElementById("pkTitle");
@@ -939,7 +975,27 @@ html, body{
     try { window.postMessage(payload, "*"); } catch (e) {}
   }
 
-  /* ------------------------------------------------------------ colour kit */
+  /* A URL can be far longer than any row. Shrinking to 8px still clips it, so
+     for very long values we drop the middle instead: the scheme and the file
+     name are the parts a human actually needs. */
+  function middleEllipsis(text, el, maxWidth) {
+    text = String(text || "");
+    if (textWidthOf(el, text, parseFloat(getComputedStyle(el).fontSize)) <= maxWidth) {
+      return text;
+    }
+    var head = Math.ceil(text.length * 0.55);
+    var tail = Math.ceil(text.length * 0.28);
+    while (head > 4 && tail > 4) {
+      var candidate = text.slice(0, head) + "\u2026" + text.slice(text.length - tail);
+      if (textWidthOf(el, candidate, parseFloat(getComputedStyle(el).fontSize)) <= maxWidth) {
+        return candidate;
+      }
+      head -= 2;
+      tail -= 1;
+    }
+    return text.slice(0, Math.max(4, text.length - 1)) + "\u2026";
+  }
+
   function hsvToRgb(h, s, v) {
     var i = Math.floor(h * 6);
     var f = h * 6 - i;
@@ -1072,7 +1128,7 @@ html, body{
   /* ------------------------------------------------------------ row shells */
   function shellFor(kind) {
     var node = document.createElement("div");
-    node.className = "row";
+    node.className = kind === "divi" ? "row divi" : "row";
     if (kind === "divi") {
       node.innerHTML = '<div class="bar"></div><div class="label"></div><div class="bar"></div>';
     } else {
@@ -1143,6 +1199,18 @@ html, body{
     }
 
     titleEl.textContent = String(m.title || "PrivateMenu");
+
+    /* custom banner image (any direct https URL, e.g. a Discord CDN link) */
+    if (m.banner !== bannerState.img) {
+      bannerState.img = m.banner || null;
+      if (bannerState.img) {
+        bannerEl.style.setProperty("--banner-img", 'url("' + String(bannerState.img).replace(/"/g, '\\"') + '")');
+        bannerEl.classList.add("has-img");
+      } else {
+        bannerEl.style.removeProperty("--banner-img");
+        bannerEl.classList.remove("has-img");
+      }
+    }
 
     /* tabs */
     var cats = Array.isArray(m.categories) ? m.categories : [];
@@ -1224,6 +1292,17 @@ html, body{
         continue;
       }
 
+      /* Recycled rows are the reason sliders used to "stick and jump back":
+         the DOM node kept the previous option's fill width, then animated to
+         the new one. When the node is now showing a different option, kill the
+         transition for that one paint so the bar snaps into place instead of
+         sweeping across. */
+      var rowSig = kind + "\u0001" + String(item.label || "") + "\u0001"
+        + String(item.min != null ? item.min : "") + "\u0001"
+        + String(item.max != null ? item.max : "");
+      var recycled = node.dataset.sig !== rowSig;
+      node.dataset.sig = rowSig;
+
       var lbl = node.querySelector(".label");
       var text = String(item.label || "");
       if (lbl.textContent !== text) lbl.textContent = text;
@@ -1253,8 +1332,19 @@ html, body{
         var pct = range !== 0 ? (val - min) / range : 0;
         pct = pct < 0 ? 0 : (pct > 1 ? 1 : pct);
         num.textContent = String(item.display != null ? item.display : val);
+
+        if (recycled) {
+          bar.firstElementChild.style.transition = "none";
+          bar.lastElementChild.style.transition = "none";
+        }
         bar.firstElementChild.style.width = (pct * 100).toFixed(2) + "%";
         bar.lastElementChild.style.left = (pct * 100).toFixed(2) + "%";
+        if (recycled) {
+          // force a reflow, then restore the smooth transition for real moves
+          void bar.offsetWidth;
+          bar.firstElementChild.style.transition = "";
+          bar.lastElementChild.style.transition = "";
+        }
       }
 
       var chipVal = right.querySelector(".chip .v");
@@ -1278,6 +1368,14 @@ html, body{
 
         chip.style.maxWidth = targetW + "px";
         fitText(chipVal, availText, 8);
+
+        // Still clipped at the floor? Drop the middle of the string instead of
+        // showing a useless truncated tail.
+        var shown = String(item.display != null ? item.display : "");
+        var fsNow = parseFloat(getComputedStyle(chipVal).fontSize);
+        if (textWidthOf(chipVal, shown, fsNow) > availText) {
+          chipVal.textContent = middleEllipsis(shown, chipVal, availText);
+        }
       }
 
       var rgbEl = right.querySelector(".rgb");
@@ -1306,16 +1404,23 @@ html, body{
     cNow.textContent = String(total > 0 ? abs + 1 : 0).padStart(2, "0");
     cAll.textContent = String(total).padStart(2, "0");
 
-    /* scrollbar */
-    var rowsH = items.length * ROW_H;
+    /* ------------------------------------------------------- scroll rail ---
+       The rail's real height is the rendered list, not rows * ROW_H, so it
+       stays glued to the visible track no matter what padding is in play.
+       The thumb shows *where you are in the whole list*, so scrolling makes it
+       visibly travel instead of teleporting. */
+    var rowsH = rowsEl.getBoundingClientRect().height;
+    if (rowsH <= 0) rowsH = items.length * ROW_H;
+
     if (total > items.length && items.length > 0) {
       var ratio = items.length / total;
-      var thumbH = Math.max(ROW_H * 0.6, rowsH * ratio);
+      var thumbH = Math.max(ROW_H * 0.55, rowsH * ratio);
       var maxTop = Math.max(0, rowsH - thumbH);
       var maxFirst = Math.max(1, total - items.length);
       var first = Math.min(Math.max(0, Number(m.firstRow) || 0), maxFirst);
+
       scrollEl.classList.add("on");
-      scrollEl.style.top = (parseFloat(getComputedStyle(listEl).paddingTop) || 0) + "px";
+      scrollEl.style.top = (rowsEl.offsetTop || 0) + "px";
       scrollEl.style.height = rowsH.toFixed(1) + "px";
       thumbEl.style.height = thumbH.toFixed(1) + "px";
       thumbEl.style.top = ((first / maxFirst) * maxTop).toFixed(1) + "px";
