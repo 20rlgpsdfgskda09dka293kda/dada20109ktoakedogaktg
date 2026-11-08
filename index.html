@@ -175,7 +175,11 @@ html, body{
 #tabs{
   position: relative;
   display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
   height: calc(var(--u) * 2.06);
+  padding: 0 calc(var(--u) * .14);
   background: linear-gradient(180deg, rgba(255,255,255,.038), rgba(255,255,255,.008));
   border-bottom: 1px solid rgba(0,0,0,.55);
 }
@@ -196,29 +200,32 @@ html, body{
   position: relative;
   flex: 1 1 0;
   min-width: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: inherit;
-  font-size: calc(var(--u) * .690);
+  font-size: clamp(10.5px, calc(var(--u) * .660), 15px);
   font-weight: 600;
   letter-spacing: .002em;
   color: #93939c;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 calc(var(--u) * .16);
+  padding: 0 calc(var(--u) * .34);
   background: transparent;
   border: 0;
   cursor: default;
   transition: color .12s ease, background-color .12s ease;
 }
+.tab > span{ display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .tab + .tab::before{
   content: "";
   position: absolute;
-  left: 0; top: 27%; bottom: 27%;
+  left: calc(var(--u) * -.06);
+  top: 30%; bottom: 30%;
   width: 1px;
-  background: rgba(255,255,255,.075);
+  background: rgba(255,255,255,.085);
 }
+.tab.squeezed > span{ letter-spacing: -.03em; }
 .tab.on{
   color: #fff;
   font-weight: 700;
@@ -363,10 +370,11 @@ html, body{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--u) * .18);
+  gap: calc(var(--u) * .16);
   height: calc(var(--u) * .96);
-  max-width: calc(var(--u) * 6.2);
-  padding: 0 calc(var(--u) * .40);
+  max-width: calc(var(--u) * 8.4);
+  min-width: calc(var(--u) * 3.2);
+  padding: 0 calc(var(--u) * .34);
   border-radius: calc(var(--u) * .16);
   background: rgba(0,0,0,.45);
   border: 1px solid rgba(255,255,255,.11);
@@ -375,9 +383,10 @@ html, body{
   color: var(--dim);
   white-space: nowrap;
   overflow: hidden;
+  flex: 0 1 auto;
 }
 .chip .v{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chip .arrow{ color: var(--faint); font-size: calc(var(--u) * .58); line-height: 1; }
+.chip .arrow{ color: var(--faint); font-size: calc(var(--u) * .58); line-height: 1; flex: 0 0 auto; }
 .row.on .chip{
   border-color: rgba(var(--accent-hi-rgb), .55);
   background: rgba(var(--accent-rgb), .14);
@@ -392,8 +401,10 @@ html, body{
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--dim);
-  min-width: calc(var(--u) * 1.50);
+  min-width: calc(var(--u) * 1.95);
   text-align: right;
+  /* keep the value off the bar - this is the "100|—" overlap from the old draw */
+  margin-right: calc(var(--u) * .52);
 }
 .row.on .num{ color: #fff; }
 
@@ -578,6 +589,114 @@ html, body{
   white-space: nowrap;
 }
 
+/* ================================================================ picker */
+#picker{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(.97);
+  width: calc(var(--u) * 22);
+  padding: calc(var(--u) * .70);
+  background: var(--panel-solid);
+  border: 1px solid var(--hair);
+  border-radius: calc(var(--u) * .30);
+  box-shadow: 0 calc(var(--u) * .7) calc(var(--u) * 2) rgba(0,0,0,.78);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .13s ease, transform .13s ease;
+  backdrop-filter: blur(calc(var(--u) * .6));
+  -webkit-backdrop-filter: blur(calc(var(--u) * .6));
+  z-index: 50;
+}
+#picker.on{ opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+
+.pk-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: calc(var(--u) * .55);
+}
+#pkTitle{
+  font-size: calc(var(--u) * .675);
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: #fff;
+}
+#pkHex{
+  font-size: calc(var(--u) * .60);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .06em;
+  color: var(--faint);
+}
+
+#pkSv{
+  position: relative;
+  width: 100%;
+  height: calc(var(--u) * 9.0);
+  border-radius: calc(var(--u) * .20);
+  background:
+    linear-gradient(to top, #000, transparent),
+    linear-gradient(to right, #fff, hsl(0, 100%, 50%));
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
+}
+#pkSvDot{
+  position: absolute;
+  width: calc(var(--u) * .62);
+  height: calc(var(--u) * .62);
+  margin: calc(var(--u) * -.31) 0 0 calc(var(--u) * -.31);
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 calc(var(--u) * .35) rgba(0,0,0,.75);
+  pointer-events: none;
+}
+
+#pkHue{
+  position: relative;
+  margin-top: calc(var(--u) * .52);
+  width: 100%;
+  height: calc(var(--u) * .62);
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%,
+    #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+}
+#pkHueDot{
+  position: absolute;
+  top: 50%;
+  width: calc(var(--u) * .74);
+  height: calc(var(--u) * .74);
+  margin: calc(var(--u) * -.37) 0 0 calc(var(--u) * -.37);
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0,0,0,.45);
+  box-shadow: 0 0 calc(var(--u) * .3) rgba(0,0,0,.6);
+  pointer-events: none;
+}
+
+.pk-foot{
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * .52);
+  margin-top: calc(var(--u) * .55);
+}
+#pkPreview{
+  width: calc(var(--u) * 1.6);
+  height: calc(var(--u) * .96);
+  border-radius: calc(var(--u) * .16);
+  border: 1px solid rgba(255,255,255,.30);
+  box-shadow: inset 0 0 calc(var(--u) * .3) rgba(0,0,0,.4);
+}
+#pkRgb{
+  font-size: calc(var(--u) * .60);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+  margin-left: auto;
+}
+
 /* ========================================================== notifications */
 #toasts{
   position: fixed;
@@ -675,6 +794,21 @@ html, body{
   <div class="hint" id="descHint"></div>
 </div>
 
+<div id="picker">
+  <div class="pk-head">
+    <span id="pkTitle">Colour</span>
+    <span id="pkHex">#FFFFFF</span>
+  </div>
+  <div id="pkSv">
+    <div id="pkSvDot"></div>
+  </div>
+  <div id="pkHue"><div id="pkHueDot"></div></div>
+  <div class="pk-foot">
+    <div id="pkPreview"></div>
+    <div id="pkRgb">255, 255, 255</div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <script>
@@ -696,6 +830,18 @@ html, body{
   var toastsEl = document.getElementById("toasts");
   var listEl   = document.getElementById("list");
 
+  var pickerEl = document.getElementById("picker");
+  var pkTitle  = document.getElementById("pkTitle");
+  var pkHex    = document.getElementById("pkHex");
+  var pkSv     = document.getElementById("pkSv");
+  var pkSvDot  = document.getElementById("pkSvDot");
+  var pkHue    = document.getElementById("pkHue");
+  var pkHueDot = document.getElementById("pkHueDot");
+  var pkPrev   = document.getElementById("pkPreview");
+  var pkRgb    = document.getElementById("pkRgb");
+
+  var picker = { open: false, h: 0, s: 1, v: 1, id: null };
+
   var ROW_H = 30;
   var model = null;
 
@@ -707,6 +853,55 @@ html, body{
     var h = probe.getBoundingClientRect().height;
     root.removeChild(probe);
     if (h > 4) ROW_H = h;
+  }
+
+  /* ------------------------------------------------------------ auto fit ---
+     Long values (weapon spawn codes, model names) are wider than their box.
+     Instead of ellipsis-ing them into uselessness, shrink the font until the
+     whole string fits, down to a readable floor. This is the fix for
+     "weapon_kn..." being cut off in the screenshot.
+  */
+  var MIN_FONT_PX = 8;
+
+  /* Canvas measuring is the only reliable way to know how wide a string
+     really is: scrollWidth lies when the element is inside a flex box that
+     has already shrunk it. */
+  var measureCtx = null;
+  function textWidthOf(el, text, fontPx) {
+    if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+    var cs = getComputedStyle(el);
+    measureCtx.font = (cs.fontWeight || "500") + " " + fontPx + "px " + cs.fontFamily;
+    return measureCtx.measureText(text).width;
+  }
+
+  function fitText(el, maxWidth, floorPx) {
+    if (!el) return;
+    el.style.fontSize = "";
+    el.style.letterSpacing = "";
+    if (!maxWidth || maxWidth <= 0) return;
+
+    var floor = floorPx || MIN_FONT_PX;
+    var base = parseFloat(getComputedStyle(el).fontSize);
+    if (!base || !isFinite(base)) return;
+
+    var text = el.textContent || "";
+    if (!text) return;
+
+    if (textWidthOf(el, text, base) <= maxWidth) return;
+
+    // Find the largest size that fits, capped by the readable floor.
+    var size = base;
+    for (var step = 0; step < 26; step++) {
+      size = Math.round((size - 0.4) * 10) / 10;
+      if (size < floor) { size = floor; break; }
+      if (textWidthOf(el, text, size) <= maxWidth) break;
+    }
+    el.style.fontSize = size + "px";
+
+    if (size < base * 0.9) el.style.letterSpacing = "-0.02em";
+    if (textWidthOf(el, text, size) * 0.975 <= maxWidth) {
+      el.style.letterSpacing = "-0.04em";
+    }
   }
 
   /* --------------------------------------------------------------- bridge */
@@ -743,6 +938,136 @@ html, body{
 
     try { window.postMessage(payload, "*"); } catch (e) {}
   }
+
+  /* ------------------------------------------------------------ colour kit */
+  function hsvToRgb(h, s, v) {
+    var i = Math.floor(h * 6);
+    var f = h * 6 - i;
+    var p = v * (1 - s);
+    var q = v * (1 - f * s);
+    var t = v * (1 - (1 - f) * s);
+    var r, g, b;
+    switch (i % 6) {
+      case 0: r = v; g = t; b = p; break;
+      case 1: r = q; g = v; b = p; break;
+      case 2: r = p; g = v; b = t; break;
+      case 3: r = p; g = q; b = v; break;
+      case 4: r = t; g = p; b = v; break;
+      default: r = v; g = p; b = q; break;
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  }
+
+  function rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var d = max - min;
+    var h = 0;
+    if (d > 1e-5) {
+      if (max === r) h = ((g - b) / d) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+      if (h < 0) h += 1;
+    }
+    return [h, max <= 1e-5 ? 0 : d / max, max];
+  }
+
+  function hex2(n) {
+    var s = Math.max(0, Math.min(255, Math.round(n))).toString(16);
+    return s.length === 1 ? "0" + s : s;
+  }
+
+  function paintPicker() {
+    var rgb = hsvToRgb(picker.h, picker.s, picker.v);
+    var css = "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")";
+
+    pkSv.style.background =
+      "linear-gradient(to top, #000, transparent)," +
+      "linear-gradient(to right, #fff, hsl(" + (picker.h * 360).toFixed(1) + ", 100%, 50%))";
+
+    pkSvDot.style.left = (picker.s * 100).toFixed(2) + "%";
+    pkSvDot.style.top = ((1 - picker.v) * 100).toFixed(2) + "%";
+
+    pkHueDot.style.left = (picker.h * 100).toFixed(2) + "%";
+    pkHueDot.style.background = "hsl(" + (picker.h * 360).toFixed(1) + ", 100%, 50%)";
+
+    pkPrev.style.background = css;
+    pkRgb.textContent = rgb[0] + ", " + rgb[1] + ", " + rgb[2];
+    pkHex.textContent = "#" + hex2(rgb[0]) + hex2(rgb[1]) + hex2(rgb[2]);
+
+    return rgb;
+  }
+
+  function pickerChanged() {
+    var rgb = paintPicker();
+    if (!picker.id) return;
+    send("pm:color", {
+      id: picker.id,
+      r: rgb[0], g: rgb[1], b: rgb[2],
+      h: picker.h, s: picker.s, v: picker.v
+    });
+  }
+
+  function openPicker(d) {
+    picker.open = true;
+    picker.id = String(d.id || "");
+    pkTitle.textContent = String(d.title || "Colour");
+
+    if (d.r != null) {
+      var hsv = rgbToHsv(Number(d.r), Number(d.g), Number(d.b));
+      picker.h = d.h != null ? Number(d.h) : hsv[0];
+      picker.s = d.s != null ? Number(d.s) : hsv[1];
+      picker.v = d.v != null ? Number(d.v) : hsv[2];
+    } else {
+      picker.h = Number(d.h) || 0;
+      picker.s = d.s != null ? Number(d.s) : 1;
+      picker.v = d.v != null ? Number(d.v) : 1;
+    }
+    paintPicker();
+    pickerEl.classList.add("on");
+  }
+
+  function closePicker() {
+    picker.open = false;
+    picker.id = null;
+    pickerEl.classList.remove("on");
+  }
+
+  var dragTarget = null;
+
+  function pickerFromEvent(ev) {
+    if (dragTarget === "sv") {
+      var r = pkSv.getBoundingClientRect();
+      picker.s = Math.min(1, Math.max(0, (ev.clientX - r.left) / Math.max(1, r.width)));
+      picker.v = 1 - Math.min(1, Math.max(0, (ev.clientY - r.top) / Math.max(1, r.height)));
+      pickerChanged();
+    } else if (dragTarget === "hue") {
+      var rh = pkHue.getBoundingClientRect();
+      picker.h = Math.min(1, Math.max(0, (ev.clientX - rh.left) / Math.max(1, rh.width)));
+      pickerChanged();
+    }
+  }
+
+  pkSv.addEventListener("mousedown", function (ev) {
+    dragTarget = "sv";
+    pickerFromEvent(ev);
+    ev.preventDefault();
+  });
+  pkHue.addEventListener("mousedown", function (ev) {
+    dragTarget = "hue";
+    pickerFromEvent(ev);
+    ev.preventDefault();
+  });
+  window.addEventListener("mousemove", function (ev) {
+    if (dragTarget) pickerFromEvent(ev);
+  });
+  window.addEventListener("mouseup", function () {
+    if (dragTarget) {
+      dragTarget = null;
+      if (picker.open) send("pm:colorCommit", { id: picker.id });
+    }
+  });
 
   /* ------------------------------------------------------------ row shells */
   function shellFor(kind) {
@@ -826,6 +1151,8 @@ html, body{
       var b = document.createElement("button");
       b.className = "tab";
       b.type = "button";
+      var bs = document.createElement("span");
+      b.appendChild(bs);
       tabsEl.appendChild(b);
     }
     while (tabsEl.childElementCount > cats.length) {
@@ -833,10 +1160,37 @@ html, body{
     }
     for (var t = 0; t < cats.length; t++) {
       var tab = tabsEl.children[t];
+      var labelEl = tab.firstElementChild;
       var label = String(cats[t] == null ? "" : cats[t]);
-      if (tab.textContent !== label) tab.textContent = label;
+      if (labelEl.textContent !== label) labelEl.textContent = label;
       tab.classList.toggle("on", t === m.activeCategory);
       tab.dataset.i = String(t);
+    }
+
+    /* Tabs must never look cramped or glued together. If a label needs more
+       room than its share of the bar, shrink that label only. Each tab keeps
+       its own padding, so labels never touch the divider. */
+    if (cats.length > 0) {
+      /* Give every tab an equal share, then make sure the text inside each one
+         actually fits with real space either side of the divider. */
+      var tabStyle = getComputedStyle(tabsEl.children[0]);
+      var padL = parseFloat(tabStyle.paddingLeft) || 0;
+      var padR = parseFloat(tabStyle.paddingRight) || 0;
+      var cell = Math.max(12, tabsEl.clientWidth / cats.length);
+      var inner = Math.max(10, cell - padL - padR - 2);
+
+      for (var q = 0; q < tabsEl.childElementCount; q++) {
+        var tabEl = tabsEl.children[q];
+        var spanEl = tabEl.firstElementChild;
+        tabEl.classList.remove("squeezed");
+        if (!spanEl) continue;
+        fitText(spanEl, inner, 10.5);
+        var tw = textWidthOf(spanEl, spanEl.textContent || "", parseFloat(getComputedStyle(spanEl).fontSize));
+        if (tw > inner + 0.5) {
+          tabEl.classList.add("squeezed");
+          fitText(spanEl, inner, 9.5);
+        }
+      }
     }
 
     /* rows */
@@ -874,6 +1228,10 @@ html, body{
       var text = String(item.label || "");
       if (lbl.textContent !== text) lbl.textContent = text;
       lbl.title = String(item.desc || text);
+      fitText(lbl, lbl.parentElement.clientWidth - node.querySelector(".right").offsetWidth
+        - (parseFloat(getComputedStyle(node).paddingLeft) || 0)
+        - (parseFloat(getComputedStyle(node).paddingRight) || 0)
+        - (parseFloat(getComputedStyle(node).gap) || 0) - 2);
 
       var right = node.querySelector(".right");
       if (!node._built) {
@@ -900,7 +1258,27 @@ html, body{
       }
 
       var chipVal = right.querySelector(".chip .v");
-      if (chipVal) chipVal.textContent = String(item.display != null ? item.display : "");
+      if (chipVal) {
+        chipVal.textContent = String(item.display != null ? item.display : "");
+        // Weapon/model codes are long. Shrink them so the full name is visible
+        // instead of "weapon_kn...".
+        var chip = chipVal.parentElement;
+        var arrows = chip.querySelectorAll(".arrow");
+        var arrowW = 0;
+        for (var ai = 0; ai < arrows.length; ai++) arrowW += arrows[ai].getBoundingClientRect().width + 3;
+
+        var cs = getComputedStyle(chip);
+        var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+
+        /* How wide may this chip become? Enough for a long weapon/model id,
+           but never so wide that it eats the whole row. */
+        var rowW = node.clientWidth;
+        var targetW = Math.min(rowW * 0.66, window.innerWidth * 0.42);
+        var availText = Math.max(24, targetW - pad - arrowW - 2);
+
+        chip.style.maxWidth = targetW + "px";
+        fitText(chipVal, availText, 8);
+      }
 
       var rgbEl = right.querySelector(".rgb");
       var swEl = right.querySelector(".swatch");
@@ -1010,9 +1388,20 @@ html, body{
       apply(body && body.model ? body.model : body);
     } else if (action === "notify") {
       notify(body);
+    } else if (action === "picker") {
+      if (body && body.open === false) closePicker();
+      else openPicker(body || {});
+    } else if (action === "pickerUpdate") {
+      if (picker.open && body) {
+        if (body.h != null) picker.h = Number(body.h);
+        if (body.s != null) picker.s = Number(body.s);
+        if (body.v != null) picker.v = Number(body.v);
+        paintPicker();
+      }
     } else if (action === "hide") {
       root.classList.remove("on");
       descEl.classList.remove("on");
+      closePicker();
     } else if (action === "show") {
       root.classList.add("on");
     }
